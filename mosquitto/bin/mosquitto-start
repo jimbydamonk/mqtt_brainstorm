@@ -1,0 +1,13 @@
+#!/bin/bash
+
+export RABBITMQ_ADDRESS=${RABBITMQ_ADDRESS-"localhost"}
+export RABBITMQ_PORT=${RABBITMQ_PORT-"1883"}
+export USERNAME=${RABBITMQ_USERNAME="admin"}
+export PASSWORD=${RABBITMQ_PASSWORD="admin"}
+
+
+sed -i 's/^address.*/address '"$RABBITMQ_ADDRESS"':'"$RABBITMQ_PORT"'/g' /mosquitto/config/conf.d/rabbitmq-bridge.conf
+sed -i 's/^remote_username.*/remote_username '"$RABBITMQ_USERNAME"'/g'       /mosquitto/config/conf.d/rabbitmq-bridge.conf
+sed -i 's/^remote_password.*/remote_password '"$RABBITMQ_PASSWORD"'/g'   /mosquitto/config/conf.d/rabbitmq-bridge.conf
+
+/usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf

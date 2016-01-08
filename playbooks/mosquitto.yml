@@ -1,0 +1,122 @@
+- hosts: vagrant 
+  sudo: yes
+  pre_tasks: 
+    - include_vars: vars.yml
+
+  tasks:
+  - name: Build mosquitto docker image 
+    docker_image: 
+      path: "/vagrant/mosquitto" 
+      name: "mosquitto" 
+      nocache: true
+      state: build
+
+  - name: Remove data directory
+    file: 
+      name: "/docker/mosquitto/data"
+      state: absent
+      owner: root
+      group: docker
+
+  - name: Create data directory
+    file: 
+      name: "/docker/mosquitto/data"
+      state: directory
+      owner: root
+      group: docker
+    when: purge_data is defined
+
+  - name: Create log directory
+    file: 
+      name: "/docker/mosquitto/log"
+      state: directory
+      owner: root
+      group: docker
+
+  - name: Create config directory
+    file: 
+      name: "/docker/mosquitto/config"
+      state: directory
+      owner: root
+      group: docker
+      mode: 0777
+
+  - name: Create conf.d directory
+    file: 
+      name: "/docker/mosquitto/config/conf.d"
+      state: directory
+      owner: root
+      group: docker
+      mode: 0777
+
+  - name: Create mosquitto docker instance (node1)
+    docker:
+      name: "mosquitto-node1_{{ item[0] }}-{{ regions[item[1]].name }}"
+      image: mosquitto
+      state: started
+      hostname: "mosquitto_node1_{{ item[0] }}_{{ regions[item[1]].name }}"
+      domainname: "mqtt.fabrik.nytimes.com"
+      volumes:
+      - "/docker/mosquitto/data:/mosquitto/data:rw"
+      - "/docker/mosquitto/log:/mosquitto/log:rw"
+      ports: 
+          - "{{ regions[item[1]].port_prefix }}{{ item[0] }}83:1883"
+      env:
+        HOSTNAME: "mosquitto_node1_{{ item[0]  }}_{{ regions[item[1]].name }}.mqtt.fabrik.nytimes.com"
+        RABBITMQ_USERNAME: "{{ rabbitmq_username }}"
+        RABBITMQ_PASSWORD: "{{ rabbitmq_password }}"
+        RABBITMQ_ADDRESS: "rabbit_node1_{{ regions[item[1]].name }}"
+        RABBITMQ_PORT: "1883"
+      links:
+        - "rabbit-node1-{{ regions[item[1]].name }}:aliasnode1"
+    with_nested:
+      - range(1 , broker_per_node + 1 ) | list
+      - regions
+
+  - name: Create mosquitto docker instance (node2)
+    docker:
+      name: "mosquitto-node2_{{ item[0] }}-{{ regions[item[1]].name }}"
+      image: mosquitto
+      state: started
+      hostname: "mosquitto_node2_{{ item[0] }}_{{ regions[item[1]].name }}"
+      domainname: "mqtt.fabrik.nytimes.com"
+      volumes:
+      - "/docker/mosquitto/data:/mosquitto/data:rw"
+      - "/docker/mosquitto/log:/mosquitto/log:rw"
+      ports: 
+          - "{{ regions[item[1]].port_prefix }}{{ item[0] }}84:1883"
+      env:
+        HOSTNAME: "mosquitto_node2_{{ item[0]  }}_{{ regions[item[1]].name }}.mqtt.fabrik.nytimes.com"
+        RABBITMQ_USERNAME: "{{ rabbitmq_username }}"
+        RABBITMQ_PASSWORD: "{{ rabbitmq_password }}"
+        RABBITMQ_ADDRESS: "rabbit_node2_{{ regions[item[1]].name }}"
+        RABBITMQ_PORT: "1883"
+      links:
+        - "rabbit-node2-{{ regions[item[1]].name }}:aliasnode1"
+    with_nested:
+      - range(1 , broker_per_node + 1 ) | list
+      - regions
+
+  - name: Create mosquitto docker instance (node3)
+    docker:
+      name: "mosquitto-node3_{{ item[0] }}-{{ regions[item[1]].name }}"
+      image: mosquitto
+      state: started
+      hostname: "mosquitto_node3_{{ item[0] }}_{{ regions[item[1]].name }}"
+      domainname: "mqtt.fabrik.nytimes.com"
+      volumes:
+      - "/docker/mosquitto/data:/mosquitto/data:rw"
+      - "/docker/mosquitto/log:/mosquitto/log:rw"
+      ports: 
+          - "{{ regions[item[1]].port_prefix }}{{ item[0] }}85:1883"
+      env:
+        HOSTNAME: "mosquitto_node3_{{ item[0]  }}_{{ regions[item[1]].name }}.mqtt.fabrik.nytimes.com"
+        RABBITMQ_USERNAME: "{{ rabbitmq_username }}"
+        RABBITMQ_PASSWORD: "{{ rabbitmq_password }}"
+        RABBITMQ_ADDRESS: "rabbit_node3_{{ regions[item[1]].name }}"
+        RABBITMQ_PORT: "1883"
+      links:
+        - "rabbit-node3-{{ regions[item[1]].name }}:aliasnode1"
+    with_nested:
+      - range(1 , broker_per_node + 1 ) | list
+      - regions

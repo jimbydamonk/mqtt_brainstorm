@@ -1,0 +1,16 @@
+---
+regions:
+  usw1:
+    name: us-west-1
+    port_prefix: 10
+  euw1:
+    name: eu-west-1 
+    port_prefix: 11
+nodes:
+  - node2 
+  - node3
+
+broker_per_node: 2 
+
+rabbitmq_username: admin
+rabbitmq_password: admin

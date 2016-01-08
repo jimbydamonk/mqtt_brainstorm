@@ -1,0 +1,112 @@
+- hosts: vagrant
+  sudo: yes
+  pre_tasks: 
+    - include_vars: vars.yml
+
+  tasks:
+  - name: Build rabbitmq docker image 
+    docker_image: 
+      path: "/vagrant/rabbitmq" 
+      name: "rabbit" 
+      state: build
+
+  - name: Remove data directory
+    file: 
+      name: "/docker/rabbit/data"
+      state: absent
+      owner: root
+      group: docker
+    when: purge_data is defined
+
+  - name: Create data directory
+    file: 
+      name: "/docker/rabbit/data"
+      state: directory
+      owner: root
+      group: docker
+
+  - name: Create log directory
+    file: 
+      name: "/docker/rabbit/log"
+      state: directory
+      owner: root
+      group: docker
+
+  - name: Create config directory
+    file: 
+      name: "/docker/rabbit/config"
+      state: directory
+      owner: root
+      group: docker
+
+  - name: Copy rabbitmq.config 
+    template: 
+      src: "../rabbitmq/config/rabbitmq.config.j2"
+      dest: "/docker/rabbit/config/rabbitmq.config"
+
+  - name: Copy rabbitmq_defs.json
+    template: 
+      src: "../rabbitmq/config/rabbitmq_defs.json.j2"
+      dest: "/docker/rabbit/config/rabbitmq_defs.json"
+
+  - name: Create first rabbit docker instance per region 
+    docker:
+      name: "rabbit-node1-{{ item.value.name }}"
+      image: rabbit
+      state: started
+      hostname: "rabbit_node1_{{ item.value.name }}"
+      domainname: "mqtt.fabrik.nytimes.com"
+      volumes:
+      - "/docker/rabbit/config:/rabbit/config:ro"
+      - "/docker/rabbit/data:/rabbit/data:rw"
+      - "/docker/rabbit/log:/rabbit/log:rw"
+      ports: 
+          - "{{ item.value.port_prefix }}672:5672"
+          - "{{ item.value.port_prefix }}673:15672" 
+          - "{{ item.value.port_prefix }}369:4369"
+          - "{{ item.value.port_prefix }}883:1883"
+      env:
+        HOSTNAME: "rabbit_node1_{{ item.value.name }}.mqtt.fabrik.nytimes.com"
+        RABBITMQ_USE_LONGNAME: true
+    with_dict: regions
+
+  - name: Create second docker instance per region 
+    docker:
+      name: "rabbit-node2-{{ item.value.name }}"
+      image: rabbit
+      state: started
+      hostname: "rabbit_node2_{{ item.value.name }}"
+      domainname: "mqtt.fabrik.nytimes.com"
+      volumes:
+      - "/docker/rabbit/config:/rabbit/config:ro"
+      - "/docker/rabbit/data:/rabbit/data:rw"
+      - "/docker/rabbit/log:/rabbit/log:rw"
+      links:
+        - "rabbit-node1-{{ item.value.name }}:aliasnode1"
+      env:
+        HOSTNAME: "rabbit_node2_{{ item.value.name }}.mqtt.fabrik.nytimes.com"
+        CLUSTERED: true
+        CLUSTER_WITH: "rabbit_node1_{{ item.value.name }}"
+        RABBITMQ_USE_LONGNAME: true
+    with_dict: regions
+
+  - name: Create third docker instance per region 
+    docker:
+      name: "rabbit-node3-{{ item.value.name }}"
+      image: rabbit
+      state: started
+      hostname: "rabbit_node3_{{ item.value.name }}"
+      domainname: "mqtt.fabrik.nytimes.com"
+      volumes:
+      - "/docker/rabbit/config:/rabbit/config:ro"
+      - "/docker/rabbit/data:/rabbit/data:rw"
+      - "/docker/rabbit/log:/rabbit/log:rw"
+      links:
+        - "rabbit-node1-{{ item.value.name }}:aliasnode1"
+        - "rabbit-node2-{{ item.value.name }}:aliasnode2"
+      env:
+        HOSTNAME: "rabbit_node3_{{ item.value.name }}.mqtt.fabrik.nytimes.com"
+        CLUSTERED: true
+        CLUSTER_WITH: "rabbit_node1_{{ item.value.name }}"
+        RABBITMQ_USE_LONGNAME: true
+    with_dict: regions

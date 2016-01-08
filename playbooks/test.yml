@@ -1,0 +1,11 @@
+- hosts: vagrant 
+  sudo: yes
+  pre_tasks: 
+    - include_vars: vars.yml
+
+  tasks:
+  - name: test
+    debug: msg="{{ item[0] }} {{ item[1] }} {{ regions[item[1]].name }}"
+    with_nested:
+      - range(2 , broker_per_node + 2 ) | list
+      - regions

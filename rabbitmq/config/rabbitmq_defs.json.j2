@@ -1,0 +1,28 @@
+{
+    "parameters": [],
+    "permissions": [
+        {
+            "configure": ".*",
+            "read": ".*",
+            "user": "{{ rabbitmq_username }}",
+            "vhost": "/",
+            "write": ".*"
+        }
+
+    ],
+    "policies": [],
+    "users": [
+
+        {
+            "name": "{{ rabbitmq_username }}",
+            "password": "{{ rabbitmq_password }}",
+            "tags": "administrator"
+        }
+
+    ],
+    "vhosts": [
+        {
+            "name": "/"
+        }
+    ]
+}

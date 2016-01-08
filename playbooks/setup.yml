@@ -1,0 +1,21 @@
+---
+- hosts: vagrant 
+  sudo: yes
+  tasks:
+  - name: Install EPEL
+    yum: name=epel-release state=latest
+
+  - name: Install pip
+    yum: name=python-pip.noarch state=latest
+
+  - name: Install docker repo
+    copy: src=./files/docker.repo dest=/etc/yum.repos.d/docker.repo
+
+  - name: Install docker
+    yum: name=docker-engine state=latest
+
+  - name: Install docker-py
+    pip: name=docker-py state=latest
+
+  - name: Start docker
+    service: name=docker state=started enabled=true
