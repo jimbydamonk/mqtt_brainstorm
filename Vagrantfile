@@ -5,7 +5,15 @@ Vagrant.configure("2") do |config|
   config.vm.hostname="dockerhost"
   config.vm.box = "geerlingguy/centos7"
   config.vm.network :forwarded_port, guest: 10673, host: 10673 
+  config.vm.network :forwarded_port, guest: 10883, host: 10883 
+  config.vm.network :forwarded_port, guest: 10884, host: 10884 
+  config.vm.network :forwarded_port, guest: 10885, host: 10885 
+
   config.vm.network :forwarded_port, guest: 11673, host: 11673
+  config.vm.network :forwarded_port, guest: 11883, host: 11883
+  config.vm.network :forwarded_port, guest: 11884, host: 11884
+  config.vm.network :forwarded_port, guest: 11885, host: 11885
+
 
   config.vm.network :forwarded_port, guest: 10183, host: 10183 
   config.vm.network :forwarded_port, guest: 11183, host: 11183 
@@ -30,19 +38,18 @@ Vagrant.configure("2") do |config|
       vb.customize ["modifyvm", :id, "--memory", "5120"]
   end
 
+  config.vm.provision "shell" do |s|
+    ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
+    s.inline = <<-SHELL
+      echo "#{ssh_pub_key}" >> /home/vagrant/.ssh/authorized_keys
+    SHELL
+  end
   config.vm.provision "ansible" do |ansible|
       ansible.sudo = true
       ansible.playbook = "playbooks/main.yml"
       ansible.inventory_path = "inventory.txt"
       ansible.host_key_checking = false
       ansible.limit = "all"
-  end
-
- config.vm.provision "shell" do |s|
-    ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
-    s.inline = <<-SHELL
-      echo "#{ssh_pub_key}" >> /home/vagrant/.ssh/authorized_keys
-    SHELL
   end
 
 end

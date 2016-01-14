@@ -48,13 +48,16 @@
     template: 
       src: "../rabbitmq/config/rabbitmq_defs.json.j2"
       dest: "/docker/rabbit/config/rabbitmq_defs.json"
+  - name: Create Docker Network
+    command: docker network create --driver bridge mqtt_network
+    ignore_errors: true
 
   - name: Create first rabbit docker instance per region 
     docker:
       name: "rabbit-node1-{{ item.value.name }}"
       image: rabbit
       state: started
-      hostname: "rabbit_node1_{{ item.value.name }}"
+      hostname: "rabbitx-node1-{{ item.value.name }}"
       domainname: "mqtt.fabrik.nytimes.com"
       volumes:
       - "/docker/rabbit/config:/rabbit/config:ro"
@@ -66,27 +69,35 @@
           - "{{ item.value.port_prefix }}369:4369"
           - "{{ item.value.port_prefix }}883:1883"
       env:
-        HOSTNAME: "rabbit_node1_{{ item.value.name }}.mqtt.fabrik.nytimes.com"
+        HOSTNAME: "rabbit-node1-{{ item.value.name }}"
         RABBITMQ_USE_LONGNAME: true
+        FEDERATE_WITH: ' {"uri":[{% for region in regions%}{% if region != item.key%}{% for node in nodes %}"amqp://admin:admin@rabbit-{{ node }}-{{ regions[region].name }}"{% if not loop.last %},{%endif%}{%endfor%}{%endif%}{%endfor%}]}'
     with_dict: regions
+
+
+  - name: Connect containers to network   
+    command: "docker network connect mqtt_network rabbit-{{ item[1] }}-{{ regions[item[0]].name }}"
+    with_nested:
+      - regions
+      - ['node1']
 
   - name: Create second docker instance per region 
     docker:
       name: "rabbit-node2-{{ item.value.name }}"
       image: rabbit
       state: started
-      hostname: "rabbit_node2_{{ item.value.name }}"
+      hostname: "rabbit-node2-{{ item.value.name }}"
       domainname: "mqtt.fabrik.nytimes.com"
       volumes:
       - "/docker/rabbit/config:/rabbit/config:ro"
       - "/docker/rabbit/data:/rabbit/data:rw"
       - "/docker/rabbit/log:/rabbit/log:rw"
-      links:
-        - "rabbit-node1-{{ item.value.name }}:aliasnode1"
+      ports:
+        - "{{ item.value.port_prefix }}884:1883"
       env:
-        HOSTNAME: "rabbit_node2_{{ item.value.name }}.mqtt.fabrik.nytimes.com"
+        HOSTNAME: "rabbit-node2-{{ item.value.name }}"
         CLUSTERED: true
-        CLUSTER_WITH: "rabbit_node1_{{ item.value.name }}"
+        CLUSTER_WITH: "rabbit-node1-{{ item.value.name }}"
         RABBITMQ_USE_LONGNAME: true
     with_dict: regions
 
@@ -95,18 +106,24 @@
       name: "rabbit-node3-{{ item.value.name }}"
       image: rabbit
       state: started
-      hostname: "rabbit_node3_{{ item.value.name }}"
+      hostname: "rabbit-node3-{{ item.value.name }}"
       domainname: "mqtt.fabrik.nytimes.com"
       volumes:
       - "/docker/rabbit/config:/rabbit/config:ro"
       - "/docker/rabbit/data:/rabbit/data:rw"
       - "/docker/rabbit/log:/rabbit/log:rw"
-      links:
-        - "rabbit-node1-{{ item.value.name }}:aliasnode1"
-        - "rabbit-node2-{{ item.value.name }}:aliasnode2"
+      ports:
+        - "{{ item.value.port_prefix }}884:1884"
       env:
-        HOSTNAME: "rabbit_node3_{{ item.value.name }}.mqtt.fabrik.nytimes.com"
+        HOSTNAME: "rabbit-node3-{{ item.value.name }}"
         CLUSTERED: true
-        CLUSTER_WITH: "rabbit_node1_{{ item.value.name }}"
+        CLUSTER_WITH: "rabbit-node1-{{ item.value.name }}"
         RABBITMQ_USE_LONGNAME: true
     with_dict: regions
+
+
+  - name: Connect containers to network   
+    command: "docker network connect mqtt_network rabbit-{{ item[1] }}-{{ regions[item[0]].name }} "
+    with_nested:
+      - regions
+      - nodes

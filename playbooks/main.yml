@@ -1,4 +1,4 @@
 ---
 - include: setup.yml 
 - include: rabbitmq.yml 
-- include: mosquitto.yml 
+#- include: mosquitto.yml 
