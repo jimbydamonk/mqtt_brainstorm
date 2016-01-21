@@ -1,0 +1,38 @@
+global
+    log /dev/log local0 debug
+
+defaults
+    log     global
+    retries 2
+    timeout connect 5000
+    timeout server 50000
+    timeout client 50000
+
+resolvers docker
+    nameserver dnsmasq 127.0.0.1:53
+
+listen edge-events
+    log /dev/log local0 debug
+
+    bind *:1883
+    mode tcp
+    balance leastconn
+{% for region in regions%}
+{% for node in nodes %}
+    server rabbit-{{ node }}-{{ regions[region].name }} rabbit-{{ node }}-{{ regions[region].name }}:1883 check resolvers docker resolve-prefer ipv4
+{% endfor %}
+{% endfor %}
+
+
+{% for region in regions%}
+listen edge-amqp-{{ regions[region].name }}
+    bind *:{{ regions[region].port_prefix }}777
+    mode tcp
+    balance roundrobin
+{% for node in nodes %}
+    server rabbit-{{ node }}-{{ regions[region].name }} rabbit-{{ node }}-{{ regions[region].name }}:5672 check resolvers docker resolve-prefer ipv4
+{% endfor %}
+
+{% endfor %}
+
+

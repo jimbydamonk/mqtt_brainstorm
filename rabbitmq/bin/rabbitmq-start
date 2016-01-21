@@ -12,14 +12,26 @@ if [ -z "$CLUSTERED" ]; then
     else
         #remove any leading whitespace 
         FEDERATE_WITH="$(echo -e "${FEDERATE_WITH}" | sed -e 's/^[[:space:]]*//')"
-        echo -e ${FEDERATE_WITH} > /tmp/rabbitmq_federation.json
         echo -e "Federate with ${FEDERATE_WITH}" > /var/log/rabbitmq/federation-status 
         echo -e "" >> /var/log/rabbitmq/federation-status
         echo -e "===============================" >>  /var/log/rabbitmq/federation-status
+        sleep 15 #Wait for rabbit to fully start
+        echo $FEDERATE_WITH
+        URIS_ARRAY=$( echo $FEDERATE_WITH | tr "|" "\n")
+        echo $URIS_ARRAY
+        COUNTER=0
+        for uri in $URIS_ARRAY
+        do 
+          echo $uri
+          federation_command="rabbitmqctl set_parameter federation-upstream federated_topic_${COUNTER} '${uri}'"
+       
+          echo -e "Federation Command" >> /var/log/rabbitmq/federation-status
+          echo -e $federation_command >> /var/log/rabbitmq/federation-status
+          eval "$federation_command" &>> /var/log/rabbitmq/federation-status
+          let COUNTER=COUNTER+1
 
-        federation_command="rabbitmqctl set_parameter federation-upstream federated_topics '${FEDERATE_WITH}'"
-        echo -e "Federation Command" >> /var/log/rabbitmq/federation-status
-        echo -e $federation_command >> /var/log/rabbitmq/federation-status
+        done
+
         echo -e "" >> /var/log/rabbitmq/federation-status
         echo -e "===============================" >>  /var/log/rabbitmq/federation-status
 
@@ -29,8 +41,6 @@ if [ -z "$CLUSTERED" ]; then
         echo -e "" >> /var/log/rabbitmq/federation-status
         echo -e "===============================" >>  /var/log/rabbitmq/federation-status
         
-        sleep 10 # We have to sleep here for some reason
-        eval "$federation_command" &>> /var/log/rabbitmq/federation-status
         eval "$federation_policy_command" &>> /var/log/rabbitmq/federation-status 
 
     fi 

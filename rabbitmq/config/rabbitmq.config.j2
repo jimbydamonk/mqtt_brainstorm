@@ -1,5 +1,7 @@
 [
     {rabbit, [
+     	{auth_backends, [rabbit_auth_backend_http, rabbit_auth_backend_internal]}
+
     ]},
     {rabbitmq_management, [
         {load_definitions, "/rabbit/config/rabbitmq_defs.json"}

@@ -1,0 +1,51 @@
+- hosts: vagrant
+  sudo: yes
+  pre_tasks: 
+    - include_vars: vars.yml
+
+  tasks:
+  - name: Create  directory
+    file: 
+      name: "/docker/haproxy"
+      state: directory
+      owner: root
+      group: docker
+  
+  - name: Copy Dockerfile
+    template: 
+      src: "../haproxy/Dockerfile"
+      dest: "/docker/haproxy/Dockerfile"
+
+  - name: Copy haproxy.cfg
+    template: 
+      src: "../haproxy/config/haproxy.cfg.j2"
+      dest: "/docker/haproxy/haproxy.cfg"
+
+  - name: Build haproxy docker image 
+    docker_image: 
+      path: "/docker/haproxy" 
+      name: "haproxy" 
+      state: build
+
+  - name: Create log directory
+    file: 
+      name: "/docker/haproxy/log"
+      state: directory
+      owner: root
+      group: docker
+
+  - name: Create ha proxy docker container 
+    docker:
+      name: "haproxy"
+      image: "haproxy"
+      state: started
+      hostname: "haproxy"
+      net: "mqtt_network"
+      domainname: "mqtt.fabrik.nytimes.com"
+      volumes: 
+        - "/dev/log:/dev/log"
+      ports: 
+          - "1883:1883"
+          - "10777:10777"
+          - "11777:11777"
+          - "12777:12777"

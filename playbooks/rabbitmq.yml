@@ -71,15 +71,17 @@
       env:
         HOSTNAME: "rabbit-node1-{{ item.value.name }}"
         RABBITMQ_USE_LONGNAME: true
-        FEDERATE_WITH: ' {"uri":[{% for region in regions%}{% if region != item.key%}{% for node in nodes %}"amqp://admin:admin@rabbit-{{ node }}-{{ regions[region].name }}"{% if not loop.last %},{%endif%}{%endfor%}{%endif%}{%endfor%}]}'
+        FEDERATE_WITH: '{% for region in regions %}{% if region != item.key %}{"uri":["amqp://admin:admin@haproxy:{{ regions[region].port_prefix }}777"]}{% if not loop.last %}|{%endif%}{%endif%}{%endfor%}'
     with_dict: regions
-
+    ignore_errors: true
 
   - name: Connect containers to network   
     command: "docker network connect mqtt_network rabbit-{{ item[1] }}-{{ regions[item[0]].name }}"
     with_nested:
       - regions
       - ['node1']
+    ignore_errors: true
+
 
   - name: Create second docker instance per region 
     docker:
@@ -121,9 +123,9 @@
         RABBITMQ_USE_LONGNAME: true
     with_dict: regions
 
-
   - name: Connect containers to network   
     command: "docker network connect mqtt_network rabbit-{{ item[1] }}-{{ regions[item[0]].name }} "
     with_nested:
       - regions
       - nodes
+    ignore_errors: true

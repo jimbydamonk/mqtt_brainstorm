@@ -3,15 +3,30 @@ regions:
   usw1:
     name: us-west-1
     port_prefix: 10
+  use1:
+    name: us-east-1
+    port_prefix: 11
+
   euw1:
     name: eu-west-1 
-    port_prefix: 11
+    port_prefix: 12
 nodes:
-  - node1
-  - node2 
-  - node3
+  node1:
+    ports:
+      mqtt: 883
+      amqp: 5672
+      rabbit_gui: 673
+  node2: 
+    ports:
+      mqtt: 884
+      amqp: 5673
+      rabbit_gui: 674
+  node3:
+    ports:
+      mqtt: 885
+      amqp: 5674
+      rabbit_gui: 675
 
 broker_per_node: 2 
-
 rabbitmq_username: admin
 rabbitmq_password: admin

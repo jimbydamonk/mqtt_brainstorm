@@ -7,6 +7,9 @@ COPY config /rabbit/config
 
 RUN yum install -y https://www.rabbitmq.com/releases/erlang/erlang-18.2-1.el6.x86_64.rpm && \
     yum install -y https://www.rabbitmq.com/releases/rabbitmq-server/v3.6.0/rabbitmq-server-3.6.0-1.noarch.rpm  && \ 
+    yum install -y wget && \
+    wget http://www.rabbitmq.com/community-plugins/v3.6.x/rabbitmq_auth_backend_http-3.6.x-3dfe5950.ez -O /usr/lib/rabbitmq/lib/rabbitmq_server-3.6.0/plugins/rabbitmq_auth_backend_http-3.6.x-3dfe5950.ez && \
+    rabbitmq-plugins enable rabbitmq_auth_backend_http && \
     rabbitmq-plugins enable rabbitmq_management && \
     rabbitmq-plugins enable rabbitmq_mqtt && \
     rabbitmq-plugins enable rabbitmq_federation && \
